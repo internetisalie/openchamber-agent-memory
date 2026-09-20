@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@internetisalie/openchamber-agent-memory",
+  "version": "0.1.0",
+  "description": "OpenChamber panel for viewing and maintaining agent-created memories",
+  "author": "internetisalie",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/internetisalie/openchamber-agent-memory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/internetisalie/openchamber-agent-memory/issues"
+  },
+  "homepage": "https://github.com/internetisalie/openchamber-agent-memory#readme",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=1.24.3"
+    },
+    "contributes": {
+      "panel": {
+        "id": "openchamber-agent-memory",
+        "name": "Agent Memory",
+        "icon": "brain",
+        "entry": "dist/index.html"
+      },
+      "openCode": {
+        "plugins": [
+          {
+            "id": "opencode-simple-memory",
+            "methods": ["GET", "PATCH", "DELETE"]
+          }
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild ./src/main.ts --bundle --outfile=./dist/main.js --platform=browser --format=iife --target=es2022 --minify",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "validate:manifest": "node --import tsx ./scripts/validate-manifest.ts",
+    "check": "npm run typecheck && npm test && npm run build && npm run validate:manifest"
+  },
+  "devDependencies": {
+    "@openchamber/sdk": "https://github.com/internetisalie/openchamber/releases/download/v1.24.3-internetisalie.2/openchamber-sdk-1.24.3-internetisalie.2.tgz",
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.25.10",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}
