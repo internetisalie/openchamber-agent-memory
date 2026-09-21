@@ -107,6 +107,10 @@ export class AgentMemoryApp {
     this.controller.setHostReady(directory);
   }
 
+  setHostUnsupported(message: string): void {
+    this.controller.setHostUnsupported(message);
+  }
+
   setDirectory(directory: string | null): void {
     this.controller.setDirectory(directory);
   }
@@ -185,7 +189,7 @@ export class AgentMemoryApp {
       label: 'Refresh',
       size: 'sm',
       variant: 'outline',
-      disabled: !snapshot.hostReady || (snapshot.scope === 'project' && !snapshot.directory),
+      disabled: !snapshot.hostReady || snapshot.status === 'unsupported' || (snapshot.scope === 'project' && !snapshot.directory),
       loading: snapshot.status === 'loading' && snapshot.memories.length > 0,
       onClick: () => this.controller.refresh(),
     });
@@ -198,6 +202,15 @@ export class AgentMemoryApp {
     if (!snapshot.hostReady || (snapshot.status === 'loading' && snapshot.memories.length === 0)) {
       const state = element('div', 'state');
       mountSpinner(state, { label: snapshot.hostReady ? 'Loading memories' : 'Connecting to OpenChamber' });
+      return state;
+    }
+    if (snapshot.status === 'unsupported') {
+      const state = element('div', 'state');
+      mountBanner(state, {
+        tone: 'error',
+        title: 'OpenChamber update required',
+        body: snapshot.error ?? 'This OpenChamber build does not support Agent Memory.',
+      });
       return state;
     }
     if (snapshot.scope === 'project' && !snapshot.directory) {

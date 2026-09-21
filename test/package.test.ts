@@ -10,9 +10,15 @@ const root = resolve(import.meta.dirname, '..');
 describe('installable package', () => {
   it('declares the exact panel and least-privilege OpenCode grant', () => {
     const source = readFileSync(resolve(root, 'package.json'), 'utf8');
-    const pkg = JSON.parse(source) as unknown;
+    const pkg = JSON.parse(source) as { version: string };
+    const lock = JSON.parse(readFileSync(resolve(root, 'package-lock.json'), 'utf8')) as {
+      version: string;
+      packages: Record<string, { version?: string }>;
+    };
     assert.doesNotThrow(() => validateManifest(pkg));
     assert.equal(parseManifestJson(source).ok, true);
+    assert.equal(lock.version, pkg.version);
+    assert.equal(lock.packages['']?.version, pkg.version);
   });
 
   it('ships a classic IIFE panel artifact without a direct localhost transport', () => {

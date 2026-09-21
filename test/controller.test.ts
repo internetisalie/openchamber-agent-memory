@@ -148,4 +148,31 @@ describe('memory UI controller', () => {
     assert.equal(controller.snapshot().status, 'ready');
     controller.dispose();
   });
+
+  it('blocks requests on an unsupported host and recovers on a supported ready snapshot', async () => {
+    let calls = 0;
+    const controller = new MemoryController({
+      api: {
+        list: async () => { calls += 1; return []; },
+        update: async () => { throw new Error('not used'); },
+        delete: async () => { throw new Error('not used'); },
+      },
+      onChange: () => {},
+    });
+
+    controller.setHostUnsupported('Update OpenChamber.');
+    controller.setDirectory('/project');
+    controller.setScope('project');
+    controller.refresh();
+    await flush();
+    assert.equal(calls, 0);
+    assert.equal(controller.snapshot().status, 'unsupported');
+    assert.equal(controller.snapshot().error, 'Update OpenChamber.');
+
+    controller.setHostReady('/project');
+    await flush();
+    assert.equal(calls, 1);
+    assert.equal(controller.snapshot().status, 'ready');
+    controller.dispose();
+  });
 });

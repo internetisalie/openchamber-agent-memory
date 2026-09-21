@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@internetisalie/openchamber-agent-memory",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenChamber panel for viewing and maintaining agent-created memories",
   "author": "internetisalie",
   "license": "MIT",

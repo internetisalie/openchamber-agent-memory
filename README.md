@@ -10,11 +10,13 @@ Create or Add action: memory creation remains agent-only.
 
 ## Compatibility
 
-This extension requires OpenChamber `1.24.3-internetisalie.2` or a compatible build
+This extension requires OpenChamber `1.24.3-internetisalie.3` or a compatible build
 that provides `openCodeRequest`. The manifest grammar cannot encode a fork suffix, so
 its `>=1.24.3` engine floor checks only the core version; upstream `1.24.3` alone is
-not compatible. The extension uses the SDK's authenticated `host.openCodeRequest`
-transport and never contacts localhost or port 4747 directly.
+not compatible. The panel also checks the host's `ready.features` list and shows an
+update message instead of making requests when `openCodeRequest` is absent. The
+extension uses the SDK's authenticated `host.openCodeRequest` transport and never
+contacts localhost or port 4747 directly.
 
 The manifest grants only `GET`, `PATCH`, and `DELETE` access to the exact OpenCode
 plugin ID `opencode-simple-memory`. It grants no `POST`, `PUT`, filesystem, session,
@@ -22,9 +24,17 @@ or Project Knowledge capabilities.
 
 ## Install
 
-Build the extension, then install this repository folder from OpenChamber's
-**Settings > Extensions** screen and approve its OpenCode plugin grant. The matching
+In **Settings > Extensions**, install:
+
+```text
+https://github.com/internetisalie/openchamber-agent-memory.git
+```
+
+Approve its OpenCode plugin grant. OpenChamber follows the repository's default branch
+and offers updates when its `package.json` version increases. The matching
 `opencode-simple-memory` plugin must be configured in the selected OpenCode runtime.
+
+For local development, build the extension and install this repository folder instead.
 OpenChamber serves `dist/index.html` and the checked-in `dist/main.js` bundle directly.
 
 ## Development

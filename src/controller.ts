@@ -1,7 +1,7 @@
 import type { MemoryApi, MemoryDraft } from './api.ts';
 import type { MemoryRecord, MemoryScope } from './model.ts';
 
-export type LoadStatus = 'waiting' | 'loading' | 'ready' | 'error';
+export type LoadStatus = 'waiting' | 'loading' | 'ready' | 'error' | 'unsupported';
 export type MutationStatus = 'saving' | 'deleting' | null;
 
 export type MemorySnapshot = {
@@ -36,6 +36,7 @@ export class MemoryController {
   private generation = 0;
   private disposed = false;
   private hostReady = false;
+  private hostSupported = true;
   private directory: string | null = null;
   private scope: MemoryScope = 'global';
   private search = '';
@@ -73,10 +74,28 @@ export class MemoryController {
   setHostReady(directory: string | null): void {
     if (this.disposed) return;
     const wasReady = this.hostReady;
+    const wasSupported = this.hostSupported;
     const changed = this.directory !== directory;
     this.hostReady = true;
+    this.hostSupported = true;
     this.directory = directory;
-    if (!wasReady || changed) this.reload(true);
+    if (!wasReady || !wasSupported || changed) this.reload(true);
+  }
+
+  setHostUnsupported(message: string): void {
+    if (this.disposed) return;
+    this.generation += 1;
+    this.hostReady = true;
+    this.hostSupported = false;
+    this.status = 'unsupported';
+    this.error = message;
+    this.memories = [];
+    this.selectedId = null;
+    this.editing = false;
+    this.confirmingDelete = false;
+    this.mutation = null;
+    this.mutationError = null;
+    this.emit();
   }
 
   setDirectory(directory: string | null): void {
@@ -216,7 +235,6 @@ export class MemoryController {
     this.confirmingDelete = false;
     this.mutation = null;
     this.mutationError = null;
-    this.error = null;
     if (clear) {
       this.memories = [];
       this.selectedId = null;
@@ -226,6 +244,12 @@ export class MemoryController {
       this.emit();
       return;
     }
+    if (!this.hostSupported) {
+      this.status = 'unsupported';
+      this.emit();
+      return;
+    }
+    this.error = null;
     if (this.scope === 'project' && !this.directory) {
       this.status = 'ready';
       this.memories = [];

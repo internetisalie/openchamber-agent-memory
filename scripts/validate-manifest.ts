@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 type JsonRecord = Record<string, unknown>;
+const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 const record = (value: unknown, name: string): JsonRecord => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error(`${name} must be an object`);
@@ -12,7 +13,7 @@ const record = (value: unknown, name: string): JsonRecord => {
 export const validateManifest = (value: unknown): void => {
   const pkg = record(value, 'package.json');
   if (pkg.name !== '@internetisalie/openchamber-agent-memory') throw new Error('unexpected package name');
-  if (pkg.version !== '0.1.0') throw new Error('unexpected package version');
+  if (typeof pkg.version !== 'string' || !SEMVER.test(pkg.version)) throw new Error('package version must be semver');
   const openchamber = record(pkg.openchamber, 'openchamber');
   if (openchamber.apiVersion !== 1) throw new Error('openchamber.apiVersion must be 1');
   const engines = record(openchamber.engines, 'openchamber.engines');
