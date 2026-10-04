@@ -14,6 +14,7 @@ export type MemorySnapshot = {
   memories: readonly MemoryRecord[];
   selectedId: string | null;
   editing: boolean;
+  draft: MemoryDraft | null;
   confirmingDelete: boolean;
   mutation: MutationStatus;
   mutationError: string | null;
@@ -45,6 +46,7 @@ export class MemoryController {
   private memories: MemoryRecord[] = [];
   private selectedId: string | null = null;
   private editing = false;
+  private draft: MemoryDraft | null = null;
   private confirmingDelete = false;
   private mutation: MutationStatus = null;
   private mutationError: string | null = null;
@@ -65,6 +67,7 @@ export class MemoryController {
       memories: [...this.memories],
       selectedId: this.selectedId,
       editing: this.editing,
+      draft: this.editing && this.draft ? { ...this.draft } : null,
       confirmingDelete: this.confirmingDelete,
       mutation: this.mutation,
       mutationError: this.mutationError,
@@ -135,6 +138,7 @@ export class MemoryController {
   beginEdit(): void {
     if (this.disposed || !this.selectedId || this.mutation) return;
     this.editing = true;
+    this.draft = null;
     this.confirmingDelete = false;
     this.mutationError = null;
     this.emit();
@@ -165,6 +169,7 @@ export class MemoryController {
   async save(draft: MemoryDraft): Promise<void> {
     const selectedId = this.selectedId;
     if (this.disposed || !selectedId || !this.editing || this.mutation) return;
+    this.draft = { ...draft };
     const normalized: MemoryDraft = {
       title: draft.title.trim(),
       type: draft.type.trim(),

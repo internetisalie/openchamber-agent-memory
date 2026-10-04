@@ -170,11 +170,18 @@ export class AgentMemoryApp {
     input.value = snapshot.search;
     input.placeholder = 'Search title, type, or body';
     input.setAttribute('aria-label', 'Search memories');
+    const submitSearch = () => this.controller.setSearch(input.value);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault();
+        submitSearch();
+      }
+    });
     const submitRoot = element('div');
-    mountButton(submitRoot, { label: 'Search', size: 'sm', variant: 'secondary', onClick: () => search.requestSubmit() });
+    mountButton(submitRoot, { label: 'Search', size: 'sm', variant: 'secondary', onClick: submitSearch });
     search.addEventListener('submit', (event) => {
       event.preventDefault();
-      this.controller.setSearch(input.value);
+      submitSearch();
     });
     search.append(input, submitRoot);
 
@@ -294,26 +301,43 @@ export class AgentMemoryApp {
     mountButton(deleteRoot, { label: 'Delete', size: 'sm', variant: 'ghost', onClick: () => this.controller.requestDelete() });
     actions.append(editRoot, deleteRoot);
     header.append(heading, actions);
-    detail.append(header, element('div', 'memory-body', memory.content));
-
+    detail.append(header);
     if (snapshot.confirmingDelete) detail.append(this.renderDeleteConfirmation(snapshot, memory));
+    detail.append(element('div', 'memory-body', memory.content));
     return detail;
   }
 
   private renderEdit(snapshot: MemorySnapshot, memory: MemoryRecord): HTMLElement {
     const form = element('form', 'edit-form');
-    const title = this.renderField('Title', 'text', memory.title);
-    const type = this.renderField('Type', 'text', memory.type);
-    const content = this.renderField('Body', 'textarea', memory.content);
+    const currentDraft = snapshot.draft ?? memory;
+    const title = this.renderField('Title', 'text', currentDraft.title);
+    const type = this.renderField('Type', 'text', currentDraft.type);
+    const content = this.renderField('Body', 'textarea', currentDraft.content);
     const titleInput = title.querySelector('input');
     const typeInput = type.querySelector('input');
     const contentInput = content.querySelector('textarea');
     if (!titleInput || !typeInput || !contentInput) throw new Error('Missing edit fields.');
 
-    form.addEventListener('submit', (event) => {
-      event.preventDefault();
+    // The host intentionally omits allow-forms from the iframe sandbox.
+    // Invoke the action directly instead of relying on native form submission.
+    const saveDraft = () => {
+      if (!form.reportValidity()) return;
       const draft: MemoryDraft = { title: titleInput.value, type: typeInput.value, content: contentInput.value };
       void this.controller.save(draft);
+    };
+    for (const input of [titleInput, typeInput]) {
+      input.disabled = snapshot.mutation !== null;
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.isComposing) {
+          event.preventDefault();
+          saveDraft();
+        }
+      });
+    }
+    contentInput.disabled = snapshot.mutation !== null;
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      saveDraft();
     });
     const actions = element('div', 'form-actions');
     const cancelRoot = element('div');
@@ -328,7 +352,7 @@ export class AgentMemoryApp {
       label: 'Save changes',
       loading: snapshot.mutation === 'saving',
       disabled: snapshot.mutation !== null,
-      onClick: () => form.requestSubmit(),
+      onClick: saveDraft,
     });
     actions.append(cancelRoot, saveRoot);
     form.append(title, type, content, actions);
