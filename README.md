@@ -8,6 +8,11 @@ OpenChamber directory, while Global requests work without an open project. Users
 search, inspect, edit, and deliberately delete memories. There is intentionally no
 Create or Add action: memory creation remains agent-only.
 
+Delete opens a confirmation above the memory body; removal happens only after
+**Delete permanently**. Edit and search actions work inside the host's
+`allow-scripts` sandbox without enabling native form submission. Failed saves
+keep the submitted draft available for correction or retry.
+
 ## Compatibility
 
 This extension requires OpenChamber `1.24.3-internetisalie.3` or a compatible build

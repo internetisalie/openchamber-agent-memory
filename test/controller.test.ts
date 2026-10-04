@@ -23,6 +23,30 @@ const makeMemory = (id: string, scope: MemoryScope = 'global'): MemoryRecord => 
 });
 
 describe('memory UI controller', () => {
+  it('preserves the submitted draft when saving fails and clears it for a new edit', async () => {
+    const draft = { title: 'Changed title', type: 'preference', content: 'Changed body' };
+    const controller = new MemoryController({
+      api: {
+        list: async () => [makeMemory('one')],
+        update: async () => { throw new Error('Backend unavailable'); },
+        delete: async () => {},
+      },
+      onChange: () => {},
+    });
+    controller.setHostReady('/project');
+    await flush();
+    controller.beginEdit();
+    await controller.save(draft);
+    assert.equal(controller.snapshot().editing, true);
+    assert.equal(controller.snapshot().mutationError, 'Backend unavailable');
+    assert.deepEqual(controller.snapshot().draft, draft);
+    controller.cancelEdit();
+    assert.equal(controller.snapshot().draft, null);
+    controller.beginEdit();
+    assert.equal(controller.snapshot().draft, null);
+    controller.dispose();
+  });
+
   it('reloads global memories when the directory selects a different plugin instance', async () => {
     const projectA = deferred<MemoryRecord[]>();
     const projectB = deferred<MemoryRecord[]>();
