@@ -15,11 +15,12 @@ keep the submitted draft available for correction or retry.
 
 ## Compatibility
 
-This extension requires OpenChamber `1.24.3-internetisalie.3` or a compatible build
-that provides `openCodeRequest`. The manifest grammar cannot encode a fork suffix, so
-its `>=1.24.3` engine floor checks only the core version; upstream `1.24.3` alone is
-not compatible. The panel also checks the host's `ready.features` list and shows an
-update message instead of making requests when `openCodeRequest` is absent. The
+Version `0.2.0` requires the OpenChamber V2 fork based on `2.4.0`, with
+`ready.features.openCodeRequest: true`. The manifest's `>=2.4.0` floor checks the
+core version; upstream `2.4.0` alone does not provide the fork operation. The panel
+checks the object flag and shows an update message when it is absent. The older
+array-based handshake is retired. Existing V1 installations keep extension `0.1.2`;
+V2 installations need the rebuilt extension bundle. The
 extension uses the SDK's authenticated `host.openCodeRequest` transport and never
 contacts localhost or port 4747 directly.
 
@@ -54,8 +55,8 @@ npm run build
 npm run validate:manifest
 ```
 
-The SDK dependency is pinned to the release tarball for
-`v1.24.3-internetisalie.2`, where `HostClient.openCodeRequest` is available. Run
+The SDK dependency is pinned to the locally rebuilt V2 tarball in `vendor/`.
+Its source and hash are recorded in `vendor/README.md`. Run
 `npm run build` whenever panel source changes so the installable bundle stays current.
 
 ## HTTP Contract

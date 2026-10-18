@@ -17,7 +17,7 @@ export const validateManifest = (value: unknown): void => {
   const openchamber = record(pkg.openchamber, 'openchamber');
   if (openchamber.apiVersion !== 1) throw new Error('openchamber.apiVersion must be 1');
   const engines = record(openchamber.engines, 'openchamber.engines');
-  if (engines.openchamber !== '>=1.24.3') throw new Error('openchamber engine must be >=1.24.3');
+  if (engines.openchamber !== '>=2.4.0') throw new Error('openchamber engine must be >=2.4.0');
   const contributes = record(openchamber.contributes, 'openchamber.contributes');
   const panel = record(contributes.panel, 'openchamber.contributes.panel');
   const expectedPanel = {

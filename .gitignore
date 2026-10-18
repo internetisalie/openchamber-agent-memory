@@ -2,3 +2,4 @@ node_modules
 .agent-scratch/
 coverage
 *.tgz
+!vendor/openchamber-sdk-2.4.0.tgz
