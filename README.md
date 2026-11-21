@@ -3,8 +3,8 @@
 A standalone OpenChamber rail panel for browsing and maintaining memories created by
 [`opencode-simple-memory`](https://github.com/internetisalie/opencode-plugin-simple-memory).
 
-The panel has separate Global and Project scopes. The panel follows the current
-OpenChamber directory, while Global requests work without an open project. Users can
+The panel has separate Global and Project scopes and follows the current OpenChamber
+directory, which the host supplies to the plugin. The panel needs an open directory. Users can
 search, inspect, edit, and deliberately delete memories. There is intentionally no
 Create or Add action: memory creation remains agent-only.
 

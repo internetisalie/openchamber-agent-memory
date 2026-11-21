@@ -33,10 +33,12 @@ describe('memory HTTP API', () => {
   it('constructs scoped GET, PATCH, and DELETE requests exactly', async () => {
     const transport = requester(
       { status: 200, body: JSON.stringify({ memories: [memory] }) },
+      { status: 200, body: JSON.stringify({ memories: [memory] }) },
       { status: 200, body: JSON.stringify({ memory: { ...memory, title: 'Updated' } }) },
       { status: 204, body: '' },
     );
     const api = new MemoryApi(transport);
+    await api.list('global', '');
     await api.list('project', 'core selection');
     await api.update('memory/a', 'project', {
       title: 'Updated', type: 'learning', content: memory.content,
@@ -44,6 +46,10 @@ describe('memory HTTP API', () => {
     await api.delete('memory/a', 'project');
 
     assert.deepEqual(transport.seen, [
+      {
+        pluginId: 'opencode-simple-memory', method: 'GET', path: '/memories',
+        query: { scope: 'global' },
+      },
       {
         pluginId: 'opencode-simple-memory', method: 'GET', path: '/memories',
         query: { scope: 'project', q: 'core selection' },
