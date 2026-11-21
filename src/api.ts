@@ -30,12 +30,6 @@ const describeFailure = (status: number, action: string): MemoryApiError => {
   return new MemoryApiError(`The memory plugin could not ${action} memories (HTTP ${status}).`);
 };
 
-const queryFor = (scope: MemoryScope, directory: string | null): Record<string, string> => {
-  const query: Record<string, string> = { scope };
-  if (directory) query.directory = directory;
-  return query;
-};
-
 const call = async (
   requester: OpenCodeRequester,
   request: Parameters<typeof openCodeMemoryRequest>[1],
@@ -52,8 +46,8 @@ const call = async (
 export class MemoryApi {
   constructor(private readonly requester: OpenCodeRequester) {}
 
-  async list(scope: MemoryScope, search: string, directory: string | null): Promise<MemoryRecord[]> {
-    const query = queryFor(scope, directory);
+  async list(scope: MemoryScope, search: string): Promise<MemoryRecord[]> {
+    const query: Record<string, string> = { scope };
     if (search) query.q = search;
     const response = await call(this.requester, { method: 'GET', path: '/memories', query }, 'load');
     if (response.status !== 200) throw describeFailure(response.status, 'load');
@@ -62,19 +56,10 @@ export class MemoryApi {
     return parsed.memories;
   }
 
-  async update(
-    id: string,
-    scope: MemoryScope,
-    directory: string | null,
-    draft: MemoryDraft,
-  ): Promise<MemoryRecord> {
-    const query: Record<string, string> | undefined = directory
-      ? { directory }
-      : undefined;
+  async update(id: string, scope: MemoryScope, draft: MemoryDraft): Promise<MemoryRecord> {
     const response = await call(this.requester, {
       method: 'PATCH',
       path: memoryItemPath(id),
-      ...(query ? { query } : {}),
       body: JSON.stringify({ scope, ...draft }),
     }, 'update');
     if (response.status !== 200) throw describeFailure(response.status, 'update');
@@ -83,11 +68,11 @@ export class MemoryApi {
     return parsed.memory;
   }
 
-  async delete(id: string, scope: MemoryScope, directory: string | null): Promise<void> {
+  async delete(id: string, scope: MemoryScope): Promise<void> {
     const response = await call(this.requester, {
       method: 'DELETE',
       path: memoryItemPath(id),
-      query: queryFor(scope, directory),
+      query: { scope },
     }, 'delete');
     if (response.status < 200 || response.status >= 300) throw describeFailure(response.status, 'delete');
   }

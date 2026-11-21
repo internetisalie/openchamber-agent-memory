@@ -50,12 +50,12 @@ describe('memory UI controller', () => {
   it('reloads global memories when the directory selects a different plugin instance', async () => {
     const projectA = deferred<MemoryRecord[]>();
     const projectB = deferred<MemoryRecord[]>();
-    const calls: Array<[MemoryScope, string | null]> = [];
+    const calls: MemoryScope[] = [];
     const lists = [projectA, projectB];
     const controller = new MemoryController({
       api: {
-        list: (scope, _search, directory) => {
-          calls.push([scope, directory]);
+        list: (scope) => {
+          calls.push(scope);
           return lists.shift()!.promise;
         },
         update: async () => { throw new Error('not used'); },
@@ -70,7 +70,7 @@ describe('memory UI controller', () => {
     projectB.resolve([makeMemory('current')]);
     await flush();
 
-    assert.deepEqual(calls, [['global', '/project/a'], ['global', '/project/b']]);
+    assert.deepEqual(calls, ['global', 'global']);
     assert.deepEqual(controller.snapshot().memories.map((memory) => memory.id), ['current']);
     controller.dispose();
   });
@@ -79,12 +79,12 @@ describe('memory UI controller', () => {
     const global = deferred<MemoryRecord[]>();
     const projectA = deferred<MemoryRecord[]>();
     const projectB = deferred<MemoryRecord[]>();
-    const calls: Array<[MemoryScope, string, string | null]> = [];
+    const calls: Array<[MemoryScope, string]> = [];
     const lists = [global, projectA, projectB];
     const controller = new MemoryController({
       api: {
-        list: (scope, search, directory) => {
-          calls.push([scope, search, directory]);
+        list: (scope, search) => {
+          calls.push([scope, search]);
           return lists.shift()!.promise;
         },
         update: async () => { throw new Error('not used'); },
@@ -102,9 +102,9 @@ describe('memory UI controller', () => {
     await flush();
 
     assert.deepEqual(calls, [
-      ['global', '', '/project/a'],
-      ['project', '', '/project/a'],
-      ['project', '', '/project/b'],
+      ['global', ''],
+      ['project', ''],
+      ['project', ''],
     ]);
     assert.deepEqual(controller.snapshot().memories.map((memory) => memory.id), ['current']);
     controller.dispose();
@@ -113,13 +113,13 @@ describe('memory UI controller', () => {
   it('submits search, edits the selected memory, and requires delete confirmation', async () => {
     const first = makeMemory('one');
     const second = makeMemory('two');
-    const updates: Array<[string, MemoryScope, string | null, MemoryDraft]> = [];
+    const updates: Array<[string, MemoryScope, MemoryDraft]> = [];
     const deletes: string[] = [];
     const controller = new MemoryController({
       api: {
         list: async (_scope, search) => search ? [second] : [first, second],
-        update: async (id, scope, directory, draft) => {
-          updates.push([id, scope, directory, draft]);
+        update: async (id, scope, draft) => {
+          updates.push([id, scope, draft]);
           return { ...first, ...draft, updatedAt: '2026-09-03T00:00:00.000Z' };
         },
         delete: async (id) => { deletes.push(id); },
@@ -132,7 +132,7 @@ describe('memory UI controller', () => {
     assert.equal(controller.snapshot().selectedId, 'one');
     controller.beginEdit();
     await controller.save({ title: '  Revised  ', type: ' preference ', content: 'New body' });
-    assert.deepEqual(updates[0], ['one', 'global', '/project', {
+    assert.deepEqual(updates[0], ['one', 'global', {
       title: 'Revised', type: 'preference', content: 'New body',
     }]);
     assert.equal(controller.snapshot().editing, false);

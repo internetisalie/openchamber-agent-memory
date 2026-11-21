@@ -3,7 +3,7 @@
 A standalone OpenChamber rail panel for browsing and maintaining memories created by
 [`opencode-simple-memory`](https://github.com/internetisalie/opencode-plugin-simple-memory).
 
-The panel has separate Global and Project scopes. Project requests follow the current
+The panel has separate Global and Project scopes. The panel follows the current
 OpenChamber directory, while Global requests work without an open project. Users can
 search, inspect, edit, and deliberately delete memories. There is intentionally no
 Create or Add action: memory creation remains agent-only.
@@ -15,7 +15,7 @@ keep the submitted draft available for correction or retry.
 
 ## Compatibility
 
-Version `0.2.0` requires the OpenChamber V2 fork based on `2.4.0`, with
+Version `0.2.1` requires the OpenChamber V2 fork based on `2.4.0`, with
 `ready.features.openCodeRequest: true`. The manifest's `>=2.4.0` floor checks the
 core version; upstream `2.4.0` alone does not provide the fork operation. The panel
 checks the object flag and shows an update message when it is absent. The older
@@ -65,9 +65,9 @@ Its source and hash are recorded in `vendor/README.md`. Run
 - `PATCH /memories/:id` edits `title`, `type`, and `content` in the selected scope.
 - `DELETE /memories/:id` permanently removes a selected record after confirmation.
 
-Whenever OpenChamber has a current directory, every Global and Project request sends
-it so OpenCode core can select the correct plugin instance. The plugin ignores the
-query after selection; the extension never treats it as an arbitrary storage path.
+The extension sends no `directory` in any request query. OpenChamber supplies the
+current directory to OpenCode core itself, and rejects a guest request whose query names
+one.
 
 ## License
 

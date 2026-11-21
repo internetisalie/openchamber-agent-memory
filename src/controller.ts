@@ -183,12 +183,11 @@ export class MemoryController {
 
     const generation = this.generation;
     const scope = this.scope;
-    const directory = this.directory;
     this.mutation = 'saving';
     this.mutationError = null;
     this.emit();
     try {
-      const memory = await this.api.update(selectedId, scope, directory, normalized);
+      const memory = await this.api.update(selectedId, scope, normalized);
       if (!this.current(generation) || this.selectedId !== selectedId) return;
       this.memories = this.memories.map((item) => item.id === selectedId ? memory : item);
       this.mutation = null;
@@ -207,12 +206,11 @@ export class MemoryController {
     if (this.disposed || !selectedId || !this.confirmingDelete || this.mutation) return;
     const generation = this.generation;
     const scope = this.scope;
-    const directory = this.directory;
     this.mutation = 'deleting';
     this.mutationError = null;
     this.emit();
     try {
-      await this.api.delete(selectedId, scope, directory);
+      await this.api.delete(selectedId, scope);
       if (!this.current(generation) || this.selectedId !== selectedId) return;
       const index = this.memories.findIndex((memory) => memory.id === selectedId);
       this.memories = this.memories.filter((memory) => memory.id !== selectedId);
@@ -265,20 +263,14 @@ export class MemoryController {
     const generation = this.generation;
     const scope = this.scope;
     const search = this.search;
-    const directory = this.directory;
     this.status = 'loading';
     this.emit();
-    void this.load(generation, scope, search, directory);
+    void this.load(generation, scope, search);
   }
 
-  private async load(
-    generation: number,
-    scope: MemoryScope,
-    search: string,
-    directory: string | null,
-  ): Promise<void> {
+  private async load(generation: number, scope: MemoryScope, search: string): Promise<void> {
     try {
-      const memories = await this.api.list(scope, search, directory);
+      const memories = await this.api.list(scope, search);
       if (!this.current(generation)) return;
       this.memories = memories;
       this.selectedId = this.selectedId && memories.some((memory) => memory.id === this.selectedId)
