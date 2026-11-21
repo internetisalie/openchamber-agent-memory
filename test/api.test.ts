@@ -33,90 +33,53 @@ describe('memory HTTP API', () => {
   it('constructs scoped GET, PATCH, and DELETE requests exactly', async () => {
     const transport = requester(
       { status: 200, body: JSON.stringify({ memories: [memory] }) },
+      { status: 200, body: JSON.stringify({ memories: [memory] }) },
       { status: 200, body: JSON.stringify({ memory: { ...memory, title: 'Updated' } }) },
       { status: 204, body: '' },
     );
     const api = new MemoryApi(transport);
-    await api.list('project', 'core selection', '/work/project');
-    await api.update('memory/a', 'project', '/work/project', {
+    await api.list('global', '');
+    await api.list('project', 'core selection');
+    await api.update('memory/a', 'project', {
       title: 'Updated', type: 'learning', content: memory.content,
     });
-    await api.delete('memory/a', 'project', '/work/project');
+    await api.delete('memory/a', 'project');
 
     assert.deepEqual(transport.seen, [
       {
         pluginId: 'opencode-simple-memory', method: 'GET', path: '/memories',
-        query: { scope: 'project', directory: '/work/project', q: 'core selection' },
+        query: { scope: 'global' },
+      },
+      {
+        pluginId: 'opencode-simple-memory', method: 'GET', path: '/memories',
+        query: { scope: 'project', q: 'core selection' },
       },
       {
         pluginId: 'opencode-simple-memory', method: 'PATCH', path: '/memories/memory%2Fa',
-        query: { directory: '/work/project' },
         body: JSON.stringify({ scope: 'project', title: 'Updated', type: 'learning', content: memory.content }),
       },
       {
         pluginId: 'opencode-simple-memory', method: 'DELETE', path: '/memories/memory%2Fa',
-        query: { scope: 'project', directory: '/work/project' },
+        query: { scope: 'project' },
       },
-    ]);
-  });
-
-  it('uses the current directory to select the plugin instance for every global method', async () => {
-    const globalMemory = { ...memory, scope: 'global' as const };
-    const transport = requester(
-      { status: 200, body: JSON.stringify({ memories: [globalMemory] }) },
-      { status: 200, body: JSON.stringify({ memory: globalMemory }) },
-      { status: 204, body: '' },
-    );
-    const api = new MemoryApi(transport);
-    await api.list('global', '', '/current/project');
-    await api.update('memory/a', 'global', '/current/project', {
-      title: memory.title, type: memory.type, content: memory.content,
-    });
-    await api.delete('memory/a', 'global', '/current/project');
-
-    assert.deepEqual(transport.seen.map((request) => request.query), [
-      { scope: 'global', directory: '/current/project' },
-      { directory: '/current/project' },
-      { scope: 'global', directory: '/current/project' },
-    ]);
-  });
-
-  it('keeps every global method usable without a directory', async () => {
-    const globalMemory = { ...memory, scope: 'global' as const };
-    const transport = requester(
-      { status: 200, body: '{"memories":[]}' },
-      { status: 200, body: JSON.stringify({ memory: globalMemory }) },
-      { status: 204, body: '' },
-    );
-    const api = new MemoryApi(transport);
-    await api.list('global', '', null);
-    await api.update('memory/a', 'global', null, {
-      title: memory.title, type: memory.type, content: memory.content,
-    });
-    await api.delete('memory/a', 'global', null);
-
-    assert.deepEqual(transport.seen.map((request) => request.query), [
-      { scope: 'global' },
-      undefined,
-      { scope: 'global' },
     ]);
   });
 
   it('reports malformed JSON, malformed records, auth, and host failures clearly', async () => {
     await assert.rejects(
-      new MemoryApi(requester({ status: 200, body: 'nope' })).list('global', '', null),
+      new MemoryApi(requester({ status: 200, body: 'nope' })).list('global', ''),
       (error: unknown) => error instanceof MemoryApiError && /invalid JSON/.test(error.message),
     );
     await assert.rejects(
-      new MemoryApi(requester({ status: 200, body: '{"memories":[{}]}' })).list('global', '', null),
+      new MemoryApi(requester({ status: 200, body: '{"memories":[{}]}' })).list('global', ''),
       (error: unknown) => error instanceof MemoryApiError && /invalid memory list/.test(error.message),
     );
     await assert.rejects(
-      new MemoryApi(requester({ status: 403, body: '' })).list('global', '', null),
+      new MemoryApi(requester({ status: 403, body: '' })).list('global', ''),
       (error: unknown) => error instanceof MemoryApiError && /denied access/.test(error.message),
     );
     await assert.rejects(
-      new MemoryApi(requester(new Error('Host timed out'))).list('global', '', null),
+      new MemoryApi(requester(new Error('Host timed out'))).list('global', ''),
       (error: unknown) => error instanceof MemoryApiError && /Host timed out/.test(error.message),
     );
   });
