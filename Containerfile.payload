@@ -1,0 +1,17 @@
+# The extension payload as an OCI image: the files OpenChamber loads, at the
+# image root, and nothing else. The build context holds exactly those files
+# (package.json, dist/index.html, dist/main.js, README.md, LICENSE) with files
+# at 0644 and directories at 0755 (umask 022). No runtime install.
+FROM scratch
+
+ARG SOURCE
+ARG REVISION
+ARG VERSION
+ARG TITLE
+
+LABEL org.opencontainers.image.source="${SOURCE}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.title="${TITLE}"
+
+COPY . /

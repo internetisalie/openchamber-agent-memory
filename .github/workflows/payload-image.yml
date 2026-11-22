@@ -1,0 +1,144 @@
+name: payload image
+
+on:
+  pull_request:
+  push:
+    tags: ['v*-internetisalie.*']
+
+permissions:
+  contents: read
+
+jobs:
+  # Pull requests: build the payload image to an OCI archive; publish nothing.
+  build-image:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Assemble the payload context
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 022
+          context="$RUNNER_TEMP/payload"
+          mkdir -p "$context/dist"
+          install -m 0644 package.json README.md LICENSE "$context/"
+          install -m 0644 dist/index.html dist/main.js "$context/dist/"
+          chmod 0755 "$context" "$context/dist"
+          echo "PAYLOAD_CONTEXT=$context" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build the payload image
+        shell: bash
+        run: |
+          docker buildx build --platform=linux/amd64 --provenance=false \
+            -f Containerfile.payload \
+            --build-arg "SOURCE=https://github.com/${GITHUB_REPOSITORY}" \
+            --build-arg "REVISION=${GITHUB_SHA}" \
+            --build-arg "VERSION=pr-${GITHUB_SHA:0:12}" \
+            --build-arg "TITLE=${GITHUB_REPOSITORY#*/}" \
+            --output "type=oci,dest=$RUNNER_TEMP/payload.oci.tar" \
+            "$PAYLOAD_CONTEXT"
+
+  # Release tags: build the payload image and publish it under the tag only.
+  publish-image:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: payload-image-${{ github.repository }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Refuse a tag outside the release grammar
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-internetisalie\.[1-9][0-9]*$ ]]; then
+            echo "::error::$GITHUB_REF_NAME is not a release tag (vMAJOR.MINOR.PATCH-internetisalie.N, N >= 1)"
+            exit 1
+          fi
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Assemble the payload context
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 022
+          context="$RUNNER_TEMP/payload"
+          mkdir -p "$context/dist"
+          install -m 0644 package.json README.md LICENSE "$context/"
+          install -m 0644 dist/index.html dist/main.js "$context/dist/"
+          chmod 0755 "$context" "$context/dist"
+          echo "PAYLOAD_CONTEXT=$context" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse a re-push of a release tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-internetisalie\.[1-9][0-9]*$ ]]; then
+            echo "$GITHUB_REF_NAME is not a release tag; nothing to check"
+            exit 0
+          fi
+          image="ghcr.io/internetisalie/openchamber-agent-memory:$GITHUB_REF_NAME"
+          set +e
+          err=$(docker buildx imagetools inspect "$image" 2>&1 >/dev/null)
+          status=$?
+          set -e
+          if [[ $status -eq 0 ]]; then
+            echo "::error::$image is already published; publish a new release version"
+            exit 1
+          fi
+          not_found='^ERROR: [^[:space:]]+: not found$'
+          if [[ "$err" =~ $not_found ]]; then
+            echo "$image is not published; continuing"
+            exit 0
+          fi
+          echo "$err" >&2
+          exit 1
+
+      - name: Publish the payload image
+        shell: bash
+        run: |
+          docker buildx build --platform=linux/amd64 --provenance=false \
+            -f Containerfile.payload \
+            --build-arg "SOURCE=https://github.com/${GITHUB_REPOSITORY}" \
+            --build-arg "REVISION=${GITHUB_SHA}" \
+            --build-arg "VERSION=${GITHUB_REF_NAME#v}" \
+            --build-arg "TITLE=${GITHUB_REPOSITORY#*/}" \
+            --push \
+            -t "ghcr.io/internetisalie/openchamber-agent-memory:$GITHUB_REF_NAME" \
+            "$PAYLOAD_CONTEXT"
