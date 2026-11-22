@@ -59,6 +59,29 @@ The SDK dependency is pinned to the locally rebuilt V2 tarball in `vendor/`.
 Its source and hash are recorded in `vendor/README.md`. Run
 `npm run build` whenever panel source changes so the installable bundle stays current.
 
+## Payload image release
+
+The workflow `.github/workflows/payload-image.yml` publishes the loaded files
+(`package.json`, `dist/index.html`, `dist/main.js`, `README.md`, `LICENSE`) as the OCI
+image `ghcr.io/internetisalie/openchamber-agent-memory:<tag>`, built from
+`Containerfile.payload` for linux/amd64. Pull requests build the image and publish nothing.
+
+To release, push a tag at the merged, CI-green commit:
+
+```bash
+git tag v0.2.1-internetisalie.1 <commit>
+git push origin v0.2.1-internetisalie.1
+```
+
+The tag is `v<MAJOR>.<MINOR>.<PATCH>-internetisalie.<N>`, with `N` a positive integer
+(no leading zero; `.0` is refused). The first release is `v0.2.1-internetisalie.1`. Pick
+the next unused `N` for later releases. The workflow refuses a tag outside this form and
+refuses a tag whose image already exists; only the tag itself is published, with no
+`latest` or sha alias.
+
+The image version is the tag. The package version in `package.json` is not changed for a
+release and is reported independently by the loaded extension.
+
 ## HTTP Contract
 
 - `GET /memories` lists Global or Project records and optionally searches with `q`.
